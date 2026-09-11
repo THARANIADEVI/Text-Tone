@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+venv/
+.venv/
+backend/generated_audio/*.mp3
+backend/history.db
+node_modules/
+dist/
+.DS_Store
