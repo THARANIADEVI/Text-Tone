@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, request, jsonify, send_from_directory, current_app
+from flask import Blueprint, request, jsonify, send_from_directory, current_app, g
 
 from services.tts_service import (
     synthesize,
@@ -8,7 +8,17 @@ from services.tts_service import (
     TTSError,
     AUDIO_DIR,
 )
-from utils.db import add_history, list_history, delete_history
+from utils.auth import login_required
+from utils.db import (
+    add_history,
+    list_history,
+    delete_history,
+    get_history_entry,
+    add_favorite,
+    list_favorites,
+    delete_favorite,
+    DuplicateFavoriteError,
+)
 
 tts_bp = Blueprint("tts", __name__)
 
@@ -34,6 +44,7 @@ def voices():
 
 
 @tts_bp.route("/api/tts", methods=["POST"])
+@login_required
 def generate_tts():
     if not request.is_json:
         return jsonify({"success": False, "error": "Content-Type must be application/json."}), 400
@@ -55,20 +66,68 @@ def generate_tts():
         return jsonify({"success": False, "error": "Internal server error."}), 500
 
     audio_url = f"/audio/{filename}"
-    add_history(text, language, voice, audio_url)
+    add_history(text, language, voice, audio_url, g.user_id)
     return jsonify({"success": True, "audio_url": audio_url}), 201
 
 
 @tts_bp.route("/api/history", methods=["GET"])
+@login_required
 def get_history():
-    return jsonify({"success": True, "history": list_history()}), 200
+    return jsonify({"success": True, "history": list_history(g.user_id)}), 200
 
 
 @tts_bp.route("/api/history/<int:entry_id>", methods=["DELETE"])
+@login_required
 def remove_history(entry_id):
-    deleted = delete_history(entry_id)
+    deleted = delete_history(entry_id, g.user_id)
     if not deleted:
         return jsonify({"success": False, "error": "History entry not found."}), 404
+    return jsonify({"success": True}), 200
+
+
+@tts_bp.route("/api/favorites", methods=["GET"])
+@login_required
+def get_favorites():
+    favorite_type = request.args.get("type")
+    if favorite_type not in (None, "voice", "history"):
+        return jsonify({"success": False, "error": "type must be 'voice' or 'history'."}), 400
+    return jsonify({"success": True, "favorites": list_favorites(g.user_id, favorite_type)}), 200
+
+
+@tts_bp.route("/api/favorites", methods=["POST"])
+@login_required
+def create_favorite():
+    body = request.get_json(silent=True) or {}
+    favorite_type = body.get("favorite_type")
+
+    if favorite_type == "voice":
+        language = body.get("language")
+        voice_id = body.get("voice_id")
+        if not language or not voice_id:
+            return jsonify({"success": False, "error": "language and voice_id are required."}), 400
+        args = ("voice", language, voice_id, None)
+    elif favorite_type == "history":
+        history_id = body.get("history_id")
+        if not history_id or not get_history_entry(history_id, g.user_id):
+            return jsonify({"success": False, "error": "History entry not found."}), 404
+        args = ("history", None, None, history_id)
+    else:
+        return jsonify({"success": False, "error": "favorite_type must be 'voice' or 'history'."}), 400
+
+    try:
+        favorite_id = add_favorite(g.user_id, args[0], language=args[1], voice_id=args[2], history_id=args[3])
+    except DuplicateFavoriteError:
+        return jsonify({"success": False, "error": "Already favorited."}), 409
+
+    return jsonify({"success": True, "id": favorite_id}), 201
+
+
+@tts_bp.route("/api/favorites/<int:favorite_id>", methods=["DELETE"])
+@login_required
+def remove_favorite(favorite_id):
+    deleted = delete_favorite(favorite_id, g.user_id)
+    if not deleted:
+        return jsonify({"success": False, "error": "Favorite not found."}), 404
     return jsonify({"success": True}), 200
 
 

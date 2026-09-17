@@ -6,6 +6,7 @@ from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
 from routes.tts_routes import tts_bp
+from routes.auth_routes import auth_bp
 from utils.db import init_db
 
 load_dotenv()
@@ -23,8 +24,10 @@ def create_app():
 
     limiter = Limiter(get_remote_address, app=app, default_limits=["60 per minute"])
     limiter.limit("10 per minute")(tts_bp)
+    limiter.limit("20 per minute")(auth_bp)
 
     app.register_blueprint(tts_bp)
+    app.register_blueprint(auth_bp)
 
     @app.errorhandler(404)
     def not_found(_err):

@@ -1,4 +1,4 @@
-export default function HistoryList({ history, onReplay, onDelete }) {
+export default function HistoryList({ history, onReplay, onDelete, onToggleFavorite, favoritedHistoryIds }) {
   if (!history.length) {
     return <p className="text-sm text-gray-400 text-center">No speech history yet.</p>;
   }
@@ -14,6 +14,15 @@ export default function HistoryList({ history, onReplay, onDelete }) {
             </p>
           </div>
           <div className="flex gap-2 shrink-0">
+            {onToggleFavorite && (
+              <button
+                title={favoritedHistoryIds?.has(item.id) ? "Remove from favorites" : "Add to favorites"}
+                className={`text-xs px-2 ${favoritedHistoryIds?.has(item.id) ? "text-yellow-500" : "text-gray-300"} hover:text-yellow-500`}
+                onClick={() => onToggleFavorite(item.id)}
+              >
+                ★
+              </button>
+            )}
             <button
               className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
               onClick={() => onReplay(item.audio_url)}

@@ -1,11 +1,18 @@
 // empty string in dev -> relative requests go through the Vite proxy to localhost:5000
 // set to the Render backend URL in Vercel's env vars for production
+import { getToken } from "./authApi";
+
 const API_ORIGIN = import.meta.env.VITE_API_BASE_URL || "";
 const BASE = `${API_ORIGIN}/api`;
 
 function resolveAudioUrl(path) {
   if (!path || path.startsWith("http")) return path;
   return `${API_ORIGIN}${path}`;
+}
+
+function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function handle(res) {
@@ -31,7 +38,7 @@ export async function fetchVoices(language) {
 export async function generateSpeech({ text, language, voice, speed }) {
   const res = await fetch(`${BASE}/tts`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ text, language, voice, speed }),
   });
   const data = await handle(res);
@@ -39,12 +46,36 @@ export async function generateSpeech({ text, language, voice, speed }) {
 }
 
 export async function fetchHistory() {
-  const res = await fetch(`${BASE}/history`);
+  const res = await fetch(`${BASE}/history`, { headers: authHeaders() });
   const data = await handle(res);
   return data.history.map((item) => ({ ...item, audio_url: resolveAudioUrl(item.audio_url) }));
 }
 
 export async function deleteHistoryEntry(id) {
-  const res = await fetch(`${BASE}/history/${id}`, { method: "DELETE" });
+  const res = await fetch(`${BASE}/history/${id}`, { method: "DELETE", headers: authHeaders() });
+  return handle(res);
+}
+
+export async function fetchFavorites(type) {
+  const query = type ? `?type=${encodeURIComponent(type)}` : "";
+  const res = await fetch(`${BASE}/favorites${query}`, { headers: authHeaders() });
+  const data = await handle(res);
+  return data.favorites.map((fav) => ({
+    ...fav,
+    history_audio_url: fav.history_audio_url ? resolveAudioUrl(fav.history_audio_url) : null,
+  }));
+}
+
+export async function addFavorite(payload) {
+  const res = await fetch(`${BASE}/favorites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return handle(res);
+}
+
+export async function removeFavorite(id) {
+  const res = await fetch(`${BASE}/favorites/${id}`, { method: "DELETE", headers: authHeaders() });
   return handle(res);
 }

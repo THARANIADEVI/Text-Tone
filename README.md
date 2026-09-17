@@ -1,6 +1,6 @@
 # Text-to-Speech Application
 
-React + Flask, TTS via [gTTS](https://pypi.org/project/gTTS/) (free, no API key). SQLite-backed speech history, TXT upload, speed control.
+React + Flask, TTS via [gTTS](https://pypi.org/project/gTTS/) (free, no API key). JWT auth, SQLite-backed per-user speech history and favorites, TXT upload, speed control.
 
 ## Local dev
 
@@ -21,13 +21,22 @@ npm run dev               # http://localhost:5173, proxies /api and /audio to :5
 
 ## API
 
+Everything except `/api/health`, `/api/languages`, `/api/voices`, `/api/auth/*` requires
+`Authorization: Bearer <token>` (token comes back from register/login).
+
 | Method | Endpoint | Purpose |
 |---|---|---|
+| POST | `/api/auth/register` | `{ email, password }` -> `{ token, user }` |
+| POST | `/api/auth/login` | `{ email, password }` -> `{ token, user }` |
+| GET | `/api/auth/me` | current user from the bearer token |
 | POST | `/api/tts` | `{ text, language, voice, speed }` -> `{ audio_url }` |
 | GET | `/api/languages` | supported languages |
 | GET | `/api/voices?language=en` | voices for a language |
-| GET | `/api/history` | last 50 generations |
-| DELETE | `/api/history/<id>` | remove one entry |
+| GET | `/api/history` | caller's last 50 generations |
+| DELETE | `/api/history/<id>` | remove one of the caller's entries |
+| GET | `/api/favorites?type=voice\|history` | caller's favorited voices/clips |
+| POST | `/api/favorites` | `{ favorite_type: "voice", language, voice_id }` or `{ favorite_type: "history", history_id }` |
+| DELETE | `/api/favorites/<id>` | remove a favorite |
 | GET | `/api/health` | `{ status: "ok" }` |
 
 ## Deploy: frontend on Vercel, backend on Render
@@ -37,6 +46,7 @@ npm run dev               # http://localhost:5173, proxies /api and /audio to :5
 2. Render auto-detects `render.yaml` (build: `pip install -r ../requirements.txt`, start: `gunicorn app:app --bind 0.0.0.0:$PORT`).
 3. Note the deployed URL, e.g. `https://tts-backend.onrender.com`.
 4. Set env var `CORS_ORIGIN` to your Vercel URL once you have it (comma-separate if you need both prod + preview URLs).
+5. Set env var `JWT_SECRET` to a long random value (required — the app won't start without it).
 
 **Frontend (Vercel)**
 1. New Project -> root directory `frontend` (Vite framework auto-detected).
@@ -47,4 +57,4 @@ npm run dev               # http://localhost:5173, proxies /api and /audio to :5
 
 ## Project docs
 
-Full spec: `../Python -Text-to-Speech Application.pdf`. This build implements Level 1 (Basic) plus opted-in MVP extras: speed control, TXT file upload, SQLite speech history — no auth/favorites yet.
+Full spec: `../Python -Text-to-Speech Application.pdf`. This build implements Level 1 (Basic) plus most of Level 2 (Intermediate): JWT auth, per-user speech history, favorites (voices and clips), speed control, TXT file upload. Not yet done: PDF/DOCX upload, AI text enhancement, cloud audio storage (Level 3 / advanced extras).
