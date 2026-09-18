@@ -1,6 +1,6 @@
 # Text-to-Speech Application
 
-React + Flask, TTS via [gTTS](https://pypi.org/project/gTTS/) (free, no API key). JWT auth, SQLite-backed per-user speech history and favorites, TXT upload, speed control.
+React + Flask, TTS via [gTTS](https://pypi.org/project/gTTS/) (free, no API key). JWT auth, SQLite-backed per-user speech history and favorites, TXT/PDF/DOCX upload, speed control, optional Mistral-powered AI text enhancement, optional Supabase cloud audio storage.
 
 ## Local dev
 
@@ -37,7 +37,20 @@ Everything except `/api/health`, `/api/languages`, `/api/voices`, `/api/auth/*` 
 | GET | `/api/favorites?type=voice\|history` | caller's favorited voices/clips |
 | POST | `/api/favorites` | `{ favorite_type: "voice", language, voice_id }` or `{ favorite_type: "history", history_id }` |
 | DELETE | `/api/favorites/<id>` | remove a favorite |
+| POST | `/api/extract-text` | multipart `file` (.txt/.pdf/.docx, max 5MB) -> `{ text }` |
+| POST | `/api/enhance-text` | `{ text, action }` (`action` one of `summarize`, `grammar`, `rewrite`, `conversational`) -> `{ text }` |
 | GET | `/api/health` | `{ status: "ok" }` |
+
+## Optional features (env-gated, degrade gracefully if unset)
+
+**AI text enhancement** — set `MISTRAL_API_KEY` (get one at https://console.mistral.ai/). Without it,
+`/api/enhance-text` returns a clean `503` and the frontend just surfaces the error.
+
+**Cloud audio storage** — set `SUPABASE_URL` and `SUPABASE_KEY` (and optionally `SUPABASE_BUCKET`,
+default `audio`) to a project with a public storage bucket. When configured, `/api/tts` uploads the
+generated clip to Supabase Storage, deletes the local copy, and returns the public URL instead of a
+local `/audio/<file>` path — this is what fixes Render's ephemeral-disk caveat below. Without it,
+audio is served from local disk as before.
 
 ## Deploy: frontend on Vercel, backend on Render
 
@@ -47,14 +60,18 @@ Everything except `/api/health`, `/api/languages`, `/api/voices`, `/api/auth/*` 
 3. Note the deployed URL, e.g. `https://tts-backend.onrender.com`.
 4. Set env var `CORS_ORIGIN` to your Vercel URL once you have it (comma-separate if you need both prod + preview URLs).
 5. Set env var `JWT_SECRET` to a long random value (required — the app won't start without it).
+6. Optionally set `MISTRAL_API_KEY` and/or `SUPABASE_URL` + `SUPABASE_KEY` for AI enhancement / cloud storage (see above).
 
 **Frontend (Vercel)**
 1. New Project -> root directory `frontend` (Vite framework auto-detected).
 2. Set env var `VITE_API_BASE_URL` = your Render backend URL (no trailing slash).
 3. Deploy. Redeploy after setting/changing the env var (Vite bakes it in at build time).
 
-**Caveat:** Render's free-tier disk is ephemeral — `generated_audio/` and `history.db` reset on redeploy/restart. Fine for a demo; swap in cloud storage + a hosted DB (see doc section 17/25 "Advanced") for persistence.
+**Caveat:** Render's free-tier disk is ephemeral — `generated_audio/` and `history.db` reset on redeploy/restart. Configuring Supabase Storage (see above) fixes this for audio; `history.db` still needs swapping for a hosted DB (e.g. Supabase Postgres) for full persistence.
 
 ## Project docs
 
-Full spec: `../Python -Text-to-Speech Application.pdf`. This build implements Level 1 (Basic) plus most of Level 2 (Intermediate): JWT auth, per-user speech history, favorites (voices and clips), speed control, TXT file upload. Not yet done: PDF/DOCX upload, AI text enhancement, cloud audio storage (Level 3 / advanced extras).
+Full spec: `../Python -Text-to-Speech Application.pdf`. This build implements Level 1 (Basic), Level 2
+(Intermediate: JWT auth, per-user speech history, favorites, speed control), and most of Level 3
+(Advanced): PDF/DOCX/TXT upload, Mistral-powered AI text enhancement, Supabase cloud audio storage.
+Not yet done: usage limits, admin dashboard, analytics.

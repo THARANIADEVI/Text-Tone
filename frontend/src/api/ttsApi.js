@@ -79,3 +79,25 @@ export async function removeFavorite(id) {
   const res = await fetch(`${BASE}/favorites/${id}`, { method: "DELETE", headers: authHeaders() });
   return handle(res);
 }
+
+export async function extractTextFromFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE}/extract-text`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: formData,
+  });
+  const data = await handle(res);
+  return data.text;
+}
+
+export async function enhanceText(text, action) {
+  const res = await fetch(`${BASE}/enhance-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ text, action }),
+  });
+  const data = await handle(res);
+  return data.text;
+}

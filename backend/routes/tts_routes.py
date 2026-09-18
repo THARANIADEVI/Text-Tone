@@ -8,6 +8,9 @@ from services.tts_service import (
     TTSError,
     AUDIO_DIR,
 )
+from services.file_service import extract_text, FileExtractionError
+from services.ai_service import enhance_text, AIError
+from services.storage_service import upload_audio
 from utils.auth import login_required
 from utils.db import (
     add_history,
@@ -19,6 +22,8 @@ from utils.db import (
     delete_favorite,
     DuplicateFavoriteError,
 )
+
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5MB
 
 tts_bp = Blueprint("tts", __name__)
 
@@ -65,9 +70,66 @@ def generate_tts():
         current_app.logger.exception("Unexpected TTS failure")
         return jsonify({"success": False, "error": "Internal server error."}), 500
 
-    audio_url = f"/audio/{filename}"
+    local_path = os.path.join(AUDIO_DIR, filename)
+    cloud_url = upload_audio(local_path, filename)
+    if cloud_url:
+        audio_url = cloud_url
+        try:
+            os.remove(local_path)  # spec: don't keep generated audio on disk once it's in cloud storage
+        except OSError:
+            pass
+    else:
+        audio_url = f"/audio/{filename}"
+
     add_history(text, language, voice, audio_url, g.user_id)
     return jsonify({"success": True, "audio_url": audio_url}), 201
+
+
+@tts_bp.route("/api/extract-text", methods=["POST"])
+@login_required
+def extract_text_route():
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "No file uploaded."}), 400
+
+    file = request.files["file"]
+    if not file.filename:
+        return jsonify({"success": False, "error": "No file selected."}), 400
+
+    file_bytes = file.read()
+    if len(file_bytes) > MAX_UPLOAD_BYTES:
+        return jsonify({"success": False, "error": "File too large (max 5MB)."}), 400
+
+    try:
+        text = extract_text(file.filename, file_bytes)
+    except FileExtractionError as err:
+        return jsonify({"success": False, "error": err.message}), err.status_code
+
+    max_length = current_app.config["MAX_TEXT_LENGTH"]
+    return jsonify({"success": True, "text": text.strip()[:max_length]}), 200
+
+
+@tts_bp.route("/api/enhance-text", methods=["POST"])
+@login_required
+def enhance_text_route():
+    body = request.get_json(silent=True) or {}
+    text = (body.get("text") or "").strip()
+    action = body.get("action", "")
+
+    if not text:
+        return jsonify({"success": False, "error": "Text must not be empty."}), 400
+
+    max_length = current_app.config["MAX_TEXT_LENGTH"]
+    if len(text) > max_length:
+        return jsonify(
+            {"success": False, "error": f"Text exceeds maximum length of {max_length} characters."}
+        ), 400
+
+    try:
+        enhanced = enhance_text(text, action)
+    except AIError as err:
+        return jsonify({"success": False, "error": err.message}), err.status_code
+
+    return jsonify({"success": True, "text": enhanced[:max_length]}), 200
 
 
 @tts_bp.route("/api/history", methods=["GET"])

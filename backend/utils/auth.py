@@ -28,7 +28,7 @@ def _secret():
 
 def create_token(user_id):
     payload = {
-        "sub": user_id,
+        "sub": str(user_id),  # PyJWT >=2.10 requires "sub" to be a string
         "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRES_HOURS),
     }
     return jwt.encode(payload, _secret(), algorithm=JWT_ALGORITHM)
@@ -36,7 +36,7 @@ def create_token(user_id):
 
 def decode_token(token):
     payload = jwt.decode(token, _secret(), algorithms=[JWT_ALGORITHM])
-    return payload["sub"]
+    return int(payload["sub"])
 
 
 def login_required(view):

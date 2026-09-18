@@ -16,7 +16,7 @@ def create_app():
     app = Flask(__name__)
     init_db()
     app.config["MAX_TEXT_LENGTH"] = int(os.getenv("MAX_TEXT_LENGTH", 500))
-    app.config["MAX_CONTENT_LENGTH"] = 64 * 1024  # 64KB request body cap
+    app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5MB cap, sized for PDF/DOCX uploads
 
     # comma-separated list so one Render backend can allow a Vercel prod + preview URL at once
     cors_origins = [o.strip() for o in os.getenv("CORS_ORIGIN", "http://localhost:5173").split(",")]

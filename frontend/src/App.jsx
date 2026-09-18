@@ -4,6 +4,7 @@ import LanguageSelector from "./components/LanguageSelector";
 import VoiceSelector from "./components/VoiceSelector";
 import SpeedSelector from "./components/SpeedSelector";
 import FileUpload from "./components/FileUpload";
+import AIEnhance from "./components/AIEnhance";
 import GenerateButton from "./components/GenerateButton";
 import AudioPlayer from "./components/AudioPlayer";
 import DownloadButton from "./components/DownloadButton";
@@ -187,7 +188,10 @@ export default function App() {
         </div>
 
         <TextInput text={text} setText={setText} />
-        <FileUpload setText={setText} setError={setError} />
+        <div className="flex flex-wrap items-center gap-2">
+          <FileUpload setText={setText} setError={setError} />
+          <AIEnhance text={text} setText={setText} setError={setError} />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <LanguageSelector languages={languages} language={language} setLanguage={setLanguage} />
