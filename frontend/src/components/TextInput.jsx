@@ -8,7 +8,7 @@ export default function TextInput({ text, setText }) {
     <div className="w-full">
       <label className="block text-sm font-medium text-gray-700 mb-1">Enter your text:</label>
       <textarea
-        className="w-full h-40 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+        className="w-full h-40 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
         placeholder="Type or paste text here..."
         value={text}
         maxLength={MAX_CHARS}

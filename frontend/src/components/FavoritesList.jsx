@@ -21,7 +21,7 @@ export default function FavoritesList({ favorites, onSelectVoice, onReplay, onRe
           <div className="flex gap-2 shrink-0">
             {fav.favorite_type === "voice" ? (
               <button
-                className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
+                className="text-xs px-2 py-1 bg-teal-50 text-teal-600 rounded hover:bg-teal-100"
                 onClick={() => onSelectVoice(fav.language, fav.voice_id)}
               >
                 Use
@@ -29,7 +29,7 @@ export default function FavoritesList({ favorites, onSelectVoice, onReplay, onRe
             ) : (
               fav.history_audio_url && (
                 <button
-                  className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
+                  className="text-xs px-2 py-1 bg-teal-50 text-teal-600 rounded hover:bg-teal-100"
                   onClick={() => onReplay(fav.history_audio_url)}
                 >
                   Play

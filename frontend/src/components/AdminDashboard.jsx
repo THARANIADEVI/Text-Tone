@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchAdminUsers, fetchAdminAnalytics } from "../api/adminApi";
 import ErrorMessage from "./ErrorMessage";
+import Logo from "./Logo";
 
 function Stat({ label, value }) {
   return (
@@ -27,8 +28,11 @@ export default function AdminDashboard({ onClose }) {
     <div className="min-h-screen bg-gray-100 flex items-start justify-center py-10 px-4">
       <div className="w-full max-w-3xl bg-white rounded-2xl shadow-md p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-          <button className="text-indigo-600 hover:underline" onClick={onClose}>
+          <div className="flex items-center gap-2">
+            <Logo className="h-7 w-7 shrink-0" />
+            <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+          </div>
+          <button className="text-teal-600 hover:underline" onClick={onClose}>
             Back to app
           </button>
         </div>
@@ -54,7 +58,7 @@ export default function AdminDashboard({ onClose }) {
                     title={`${d.day}: ${d.n}`}
                   >
                     <div
-                      className="w-full bg-indigo-500 rounded-t"
+                      className="w-full bg-teal-500 rounded-t"
                       style={{ height: `${(d.n / maxDay) * 100}%`, minHeight: 2 }}
                     />
                   </div>

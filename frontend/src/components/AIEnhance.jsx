@@ -30,7 +30,7 @@ export default function AIEnhance({ text, setText, setError }) {
         <button
           key={id}
           type="button"
-          className="px-3 py-1.5 text-xs font-medium border border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="px-3 py-1.5 text-xs font-medium border border-teal-300 text-teal-700 rounded-lg hover:bg-teal-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
           onClick={() => handleEnhance(id)}
           disabled={loadingAction !== null}
         >

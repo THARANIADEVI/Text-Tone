@@ -14,7 +14,7 @@ export default function UsageBadge({ usage }) {
       </div>
       <div className="w-full bg-gray-200 rounded-full h-1.5">
         <div
-          className={`h-1.5 rounded-full ${atLimit ? "bg-red-500" : "bg-indigo-500"}`}
+          className={`h-1.5 rounded-full ${atLimit ? "bg-red-500" : "bg-teal-500"}`}
           style={{ width: `${pct}%` }}
         />
       </div>

@@ -24,7 +24,7 @@ export default function HistoryList({ history, onReplay, onDelete, onToggleFavor
               </button>
             )}
             <button
-              className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
+              className="text-xs px-2 py-1 bg-teal-50 text-teal-600 rounded hover:bg-teal-100"
               onClick={() => onReplay(item.audio_url)}
             >
               Play

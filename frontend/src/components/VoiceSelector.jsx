@@ -4,7 +4,7 @@ export default function VoiceSelector({ voices, voice, setVoice, isFavorite, onT
       <label className="block text-sm font-medium text-gray-700 mb-1">Voice:</label>
       <div className="flex gap-1">
         <select
-          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
           value={voice}
           onChange={(e) => setVoice(e.target.value)}
           disabled={voices.length === 0}

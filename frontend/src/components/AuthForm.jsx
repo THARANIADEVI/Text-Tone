@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { login, register } from "../api/authApi";
+import Logo from "./Logo";
 
 export default function AuthForm({ onAuthenticated }) {
   const [mode, setMode] = useState("login"); // "login" | "register"
@@ -28,7 +29,10 @@ export default function AuthForm({ onAuthenticated }) {
         onSubmit={handleSubmit}
         className="w-full max-w-sm bg-white rounded-2xl shadow-md p-6 space-y-4"
       >
-        <h1 className="text-2xl font-bold text-center text-gray-800">Text to Speech</h1>
+        <div className="flex flex-col items-center gap-2">
+          <Logo className="h-10 w-10" />
+          <h1 className="text-2xl font-bold text-center text-gray-800">Text-Tone</h1>
+        </div>
         <h2 className="text-sm font-medium text-gray-500 text-center">
           {mode === "login" ? "Log in to continue" : "Create an account"}
         </h2>
@@ -38,7 +42,7 @@ export default function AuthForm({ onAuthenticated }) {
           <input
             type="email"
             required
-            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -50,7 +54,7 @@ export default function AuthForm({ onAuthenticated }) {
             type="password"
             required
             minLength={8}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -65,14 +69,14 @@ export default function AuthForm({ onAuthenticated }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 transition"
+          className="w-full px-6 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:bg-gray-400 transition"
         >
           {loading ? "Please wait..." : mode === "login" ? "Log In" : "Sign Up"}
         </button>
 
         <button
           type="button"
-          className="w-full text-sm text-indigo-600 hover:underline"
+          className="w-full text-sm text-teal-600 hover:underline"
           onClick={() => {
             setError("");
             setMode(mode === "login" ? "register" : "login");

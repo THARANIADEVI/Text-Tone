@@ -14,6 +14,7 @@ import FavoritesList from "./components/FavoritesList";
 import AuthForm from "./components/AuthForm";
 import UsageBadge from "./components/UsageBadge";
 import AdminDashboard from "./components/AdminDashboard";
+import Logo from "./components/Logo";
 import {
   fetchLanguages,
   fetchVoices,
@@ -192,15 +193,18 @@ export default function App() {
     <div className="min-h-screen bg-gray-100 flex items-start justify-center py-10 px-4">
       <div className="w-full max-w-xl bg-white rounded-2xl shadow-md p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">Text to Speech</h1>
+          <div className="flex items-center gap-2">
+            <Logo className="h-8 w-8 shrink-0" />
+            <h1 className="text-2xl font-bold text-gray-800">Text-Tone</h1>
+          </div>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>{user.email}</span>
             {user.is_admin && (
-              <button className="text-indigo-600 hover:underline" onClick={() => setShowAdmin(true)}>
+              <button className="text-teal-600 hover:underline" onClick={() => setShowAdmin(true)}>
                 Admin
               </button>
             )}
-            <button className="text-indigo-600 hover:underline" onClick={handleLogout}>
+            <button className="text-teal-600 hover:underline" onClick={handleLogout}>
               Log out
             </button>
           </div>
