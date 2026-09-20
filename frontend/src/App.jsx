@@ -242,7 +242,7 @@ export default function App() {
           </button>
         </div>
 
-        <AudioPlayer audioUrl={audioUrl} />
+        <AudioPlayer audioUrl={audioUrl} speed={speed} />
         <DownloadButton audioUrl={audioUrl} />
 
         <div className="pt-4 border-t border-gray-200">

@@ -16,7 +16,7 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
     init_db()
-    app.config["MAX_TEXT_LENGTH"] = int(os.getenv("MAX_TEXT_LENGTH", 500))
+    app.config["MAX_TEXT_LENGTH"] = int(os.getenv("MAX_TEXT_LENGTH", 3000))
     app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5MB cap, sized for PDF/DOCX uploads
     # per-user daily cap on /api/tts generations; 0 disables the limit
     app.config["DAILY_TTS_LIMIT"] = int(os.getenv("DAILY_TTS_LIMIT", 50))

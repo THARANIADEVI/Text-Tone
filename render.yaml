@@ -7,6 +7,6 @@ services:
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: MAX_TEXT_LENGTH
-        value: 500
+        value: 3000
       - key: CORS_ORIGIN
         value: https://text-to-speech-frontend-tharania.vercel.app

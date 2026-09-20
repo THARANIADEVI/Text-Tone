@@ -1,4 +1,4 @@
-const MAX_CHARS = 500;
+const MAX_CHARS = 3000;
 
 export default function TextInput({ text, setText }) {
   const charCount = text.length;
