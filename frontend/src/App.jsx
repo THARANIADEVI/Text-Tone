@@ -12,6 +12,8 @@ import ErrorMessage from "./components/ErrorMessage";
 import HistoryList from "./components/HistoryList";
 import FavoritesList from "./components/FavoritesList";
 import AuthForm from "./components/AuthForm";
+import UsageBadge from "./components/UsageBadge";
+import AdminDashboard from "./components/AdminDashboard";
 import {
   fetchLanguages,
   fetchVoices,
@@ -21,6 +23,7 @@ import {
   fetchFavorites,
   addFavorite,
   removeFavorite,
+  fetchUsage,
 } from "./api/ttsApi";
 import { fetchMe, logout as logoutAuth } from "./api/authApi";
 
@@ -39,6 +42,8 @@ export default function App() {
   const [error, setError] = useState("");
   const [history, setHistory] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [usage, setUsage] = useState(null);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
     fetchMe()
@@ -58,6 +63,12 @@ export default function App() {
       .catch((err) => setError(err.message));
   }
 
+  function refreshUsage() {
+    fetchUsage()
+      .then(setUsage)
+      .catch(() => {});
+  }
+
   useEffect(() => {
     if (!user) return;
     fetchLanguages()
@@ -65,6 +76,7 @@ export default function App() {
       .catch((err) => setError(err.message));
     refreshHistory();
     refreshFavorites();
+    refreshUsage();
   }, [user]);
 
   useEffect(() => {
@@ -97,6 +109,7 @@ export default function App() {
       const url = await generateSpeech({ text, language, voice, speed });
       setAudioUrl(url);
       refreshHistory();
+      refreshUsage();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -173,6 +186,7 @@ export default function App() {
 
   if (!authChecked) return null;
   if (!user) return <AuthForm onAuthenticated={setUser} />;
+  if (showAdmin) return <AdminDashboard onClose={() => setShowAdmin(false)} />;
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-start justify-center py-10 px-4">
@@ -181,6 +195,11 @@ export default function App() {
           <h1 className="text-2xl font-bold text-gray-800">Text to Speech</h1>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>{user.email}</span>
+            {user.is_admin && (
+              <button className="text-indigo-600 hover:underline" onClick={() => setShowAdmin(true)}>
+                Admin
+              </button>
+            )}
             <button className="text-indigo-600 hover:underline" onClick={handleLogout}>
               Log out
             </button>
@@ -207,8 +226,14 @@ export default function App() {
 
         <ErrorMessage message={error} />
 
+        <UsageBadge usage={usage} />
+
         <div className="flex gap-3">
-          <GenerateButton onClick={handleGenerate} loading={loading} disabled={!text.trim()} />
+          <GenerateButton
+            onClick={handleGenerate}
+            loading={loading}
+            disabled={!text.trim() || (usage?.limit != null && usage.used >= usage.limit)}
+          />
           <button
             className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
             onClick={handleClear}

@@ -45,6 +45,11 @@ export async function generateSpeech({ text, language, voice, speed }) {
   return resolveAudioUrl(data.audio_url);
 }
 
+export async function fetchUsage() {
+  const res = await fetch(`${BASE}/usage`, { headers: authHeaders() });
+  return handle(res);
+}
+
 export async function fetchHistory() {
   const res = await fetch(`${BASE}/history`, { headers: authHeaders() });
   const data = await handle(res);

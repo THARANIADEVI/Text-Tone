@@ -2,7 +2,7 @@ import re
 
 from flask import Blueprint, request, jsonify, g
 
-from utils.auth import hash_password, verify_password, create_token, login_required
+from utils.auth import hash_password, verify_password, create_token, login_required, is_admin_email
 from utils.db import create_user, get_user_by_email, get_user_by_id
 
 auth_bp = Blueprint("auth", __name__)
@@ -11,7 +11,7 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def _public_user(user):
-    return {"id": user["id"], "email": user["email"]}
+    return {"id": user["id"], "email": user["email"], "is_admin": is_admin_email(user["email"])}
 
 
 @auth_bp.route("/api/auth/register", methods=["POST"])
@@ -29,7 +29,8 @@ def register():
 
     user_id = create_user(email, hash_password(password))
     token = create_token(user_id)
-    return jsonify({"success": True, "token": token, "user": {"id": user_id, "email": email}}), 201
+    user = {"id": user_id, "email": email, "is_admin": is_admin_email(email)}
+    return jsonify({"success": True, "token": token, "user": user}), 201
 
 
 @auth_bp.route("/api/auth/login", methods=["POST"])

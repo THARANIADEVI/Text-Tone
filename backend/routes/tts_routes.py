@@ -1,4 +1,6 @@
 import os
+from datetime import datetime, timezone
+
 from flask import Blueprint, request, jsonify, send_from_directory, current_app, g
 
 from services.tts_service import (
@@ -20,12 +22,19 @@ from utils.db import (
     add_favorite,
     list_favorites,
     delete_favorite,
+    count_history_since,
     DuplicateFavoriteError,
 )
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5MB
 
 tts_bp = Blueprint("tts", __name__)
+
+
+def _today_start_iso():
+    # start-of-day UTC boundary; ISO date strings sort/compare correctly against the
+    # full ISO timestamps stored in created_at
+    return datetime.now(timezone.utc).date().isoformat()
 
 
 @tts_bp.route("/api/health", methods=["GET"])
@@ -61,6 +70,16 @@ def generate_tts():
     speed = body.get("speed")  # "normal" | "slow" | None (falls back to voice default)
 
     max_length = current_app.config["MAX_TEXT_LENGTH"]
+    daily_limit = current_app.config["DAILY_TTS_LIMIT"]
+    if daily_limit > 0:
+        used_today = count_history_since(g.user_id, _today_start_iso())
+        if used_today >= daily_limit:
+            return jsonify(
+                {
+                    "success": False,
+                    "error": f"Daily generation limit reached ({daily_limit}/day). Try again tomorrow.",
+                }
+            ), 429
 
     try:
         filename = synthesize(text, language, voice, max_length, speed)
@@ -130,6 +149,14 @@ def enhance_text_route():
         return jsonify({"success": False, "error": err.message}), err.status_code
 
     return jsonify({"success": True, "text": enhanced[:max_length]}), 200
+
+
+@tts_bp.route("/api/usage", methods=["GET"])
+@login_required
+def get_usage():
+    daily_limit = current_app.config["DAILY_TTS_LIMIT"]
+    used = count_history_since(g.user_id, _today_start_iso()) if daily_limit > 0 else 0
+    return jsonify({"success": True, "used": used, "limit": daily_limit or None}), 200
 
 
 @tts_bp.route("/api/history", methods=["GET"])

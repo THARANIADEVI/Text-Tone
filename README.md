@@ -1,6 +1,6 @@
 # Text-to-Speech Application
 
-React + Flask, TTS via [gTTS](https://pypi.org/project/gTTS/) (free, no API key). JWT auth, SQLite-backed per-user speech history and favorites, TXT/PDF/DOCX upload, speed control, optional Mistral-powered AI text enhancement, optional Supabase cloud audio storage.
+React + Flask, TTS via [gTTS](https://pypi.org/project/gTTS/) (free, no API key). JWT auth, SQLite-backed per-user speech history and favorites, TXT/PDF/DOCX upload, speed control, optional Mistral-powered AI text enhancement, optional Supabase cloud audio storage, per-user daily generation limits, and an admin dashboard with usage analytics.
 
 ## Local dev
 
@@ -39,6 +39,9 @@ Everything except `/api/health`, `/api/languages`, `/api/voices`, `/api/auth/*` 
 | DELETE | `/api/favorites/<id>` | remove a favorite |
 | POST | `/api/extract-text` | multipart `file` (.txt/.pdf/.docx, max 5MB) -> `{ text }` |
 | POST | `/api/enhance-text` | `{ text, action }` (`action` one of `summarize`, `grammar`, `rewrite`, `conversational`) -> `{ text }` |
+| GET | `/api/usage` | caller's generation count for today vs. `DAILY_TTS_LIMIT` -> `{ used, limit }` |
+| GET | `/api/admin/users` | **admin only.** all users with their total generation count |
+| GET | `/api/admin/analytics` | **admin only.** total users/generations, last-14-day generation counts, top languages/voices |
 | GET | `/api/health` | `{ status: "ok" }` |
 
 ## Optional features (env-gated, degrade gracefully if unset)
@@ -52,6 +55,15 @@ generated clip to Supabase Storage, deletes the local copy, and returns the publ
 local `/audio/<file>` path — this is what fixes Render's ephemeral-disk caveat below. Without it,
 audio is served from local disk as before.
 
+**Daily usage limits** — `DAILY_TTS_LIMIT` (default `50`) caps `/api/tts` generations per user per
+UTC day; a `429` is returned once the cap is hit, and the frontend shows a usage bar and disables the
+Generate button at the limit. Set to `0` to disable the cap.
+
+**Admin dashboard** — set `ADMIN_EMAILS` to a comma-separated list of user emails. Matching users get
+an "Admin" link in the UI leading to a dashboard with total users/generations, a 14-day generation
+chart, top languages/voices, and a per-user generation count table. Without it, no one has admin
+access.
+
 ## Deploy: frontend on Vercel, backend on Render
 
 **Backend (Render)**
@@ -60,7 +72,7 @@ audio is served from local disk as before.
 3. Note the deployed URL, e.g. `https://tts-backend.onrender.com`.
 4. Set env var `CORS_ORIGIN` to your Vercel URL once you have it (comma-separate if you need both prod + preview URLs).
 5. Set env var `JWT_SECRET` to a long random value (required — the app won't start without it).
-6. Optionally set `MISTRAL_API_KEY` and/or `SUPABASE_URL` + `SUPABASE_KEY` for AI enhancement / cloud storage (see above).
+6. Optionally set `MISTRAL_API_KEY` and/or `SUPABASE_URL` + `SUPABASE_KEY` for AI enhancement / cloud storage, and `ADMIN_EMAILS` / `DAILY_TTS_LIMIT` for the admin dashboard / usage cap (see above).
 
 **Frontend (Vercel)**
 1. New Project -> root directory `frontend` (Vite framework auto-detected).
@@ -72,6 +84,7 @@ audio is served from local disk as before.
 ## Project docs
 
 Full spec: `../Python -Text-to-Speech Application.pdf`. This build implements Level 1 (Basic), Level 2
-(Intermediate: JWT auth, per-user speech history, favorites, speed control), and most of Level 3
-(Advanced): PDF/DOCX/TXT upload, Mistral-powered AI text enhancement, Supabase cloud audio storage.
-Not yet done: usage limits, admin dashboard, analytics.
+(Intermediate: JWT auth, per-user speech history, favorites, speed control), and Level 3 (Advanced):
+PDF/DOCX/TXT upload, Mistral-powered AI text enhancement, Supabase cloud audio storage, per-user daily
+usage limits, an admin dashboard, and usage analytics.
+Not implemented: pitch/volume/voice-style customization (gTTS only supports speed).

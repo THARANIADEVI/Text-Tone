@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from routes.tts_routes import tts_bp
 from routes.auth_routes import auth_bp
+from routes.admin_routes import admin_bp
 from utils.db import init_db
 
 load_dotenv()
@@ -17,6 +18,8 @@ def create_app():
     init_db()
     app.config["MAX_TEXT_LENGTH"] = int(os.getenv("MAX_TEXT_LENGTH", 500))
     app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5MB cap, sized for PDF/DOCX uploads
+    # per-user daily cap on /api/tts generations; 0 disables the limit
+    app.config["DAILY_TTS_LIMIT"] = int(os.getenv("DAILY_TTS_LIMIT", 50))
 
     # comma-separated list so one Render backend can allow a Vercel prod + preview URL at once
     cors_origins = [o.strip() for o in os.getenv("CORS_ORIGIN", "http://localhost:5173").split(",")]
@@ -25,9 +28,11 @@ def create_app():
     limiter = Limiter(get_remote_address, app=app, default_limits=["60 per minute"])
     limiter.limit("10 per minute")(tts_bp)
     limiter.limit("20 per minute")(auth_bp)
+    limiter.limit("30 per minute")(admin_bp)
 
     app.register_blueprint(tts_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
 
     @app.errorhandler(404)
     def not_found(_err):

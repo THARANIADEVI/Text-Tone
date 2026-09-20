@@ -39,21 +39,52 @@ def decode_token(token):
     return int(payload["sub"])
 
 
+def _decode_request_token():
+    """Returns (user_id, None) on success or (None, (response, status)) on failure."""
+    header = request.headers.get("Authorization", "")
+    if not header.startswith("Bearer "):
+        return None, (jsonify({"success": False, "error": "Authentication required."}), 401)
+
+    token = header[len("Bearer "):]
+    try:
+        return decode_token(token), None
+    except jwt.ExpiredSignatureError:
+        return None, (jsonify({"success": False, "error": "Session expired. Please log in again."}), 401)
+    except jwt.InvalidTokenError:
+        return None, (jsonify({"success": False, "error": "Invalid authentication token."}), 401)
+
+
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
-        header = request.headers.get("Authorization", "")
-        if not header.startswith("Bearer "):
-            return jsonify({"success": False, "error": "Authentication required."}), 401
+        user_id, error = _decode_request_token()
+        if error:
+            return error
+        g.user_id = user_id
+        return view(*args, **kwargs)
 
-        token = header[len("Bearer "):]
-        try:
-            g.user_id = decode_token(token)
-        except jwt.ExpiredSignatureError:
-            return jsonify({"success": False, "error": "Session expired. Please log in again."}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({"success": False, "error": "Invalid authentication token."}), 401
+    return wrapped
 
+
+def is_admin_email(email):
+    admin_emails = {e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()}
+    return (email or "").strip().lower() in admin_emails
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        user_id, error = _decode_request_token()
+        if error:
+            return error
+
+        from utils.db import get_user_by_id  # deferred to avoid a module import cycle
+
+        user = get_user_by_id(user_id)
+        if not user or not is_admin_email(user["email"]):
+            return jsonify({"success": False, "error": "Admin access required."}), 403
+
+        g.user_id = user_id
         return view(*args, **kwargs)
 
     return wrapped

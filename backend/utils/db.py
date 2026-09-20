@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "history.db")
 
@@ -117,6 +117,70 @@ def delete_history(entry_id, user_id):
             "DELETE FROM speech_history WHERE id = ? AND user_id = ?", (entry_id, user_id)
         )
         return cursor.rowcount > 0
+
+
+def count_history_since(user_id, since_iso):
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS n FROM speech_history WHERE user_id = ? AND created_at >= ?",
+            (user_id, since_iso),
+        ).fetchone()
+        return row["n"]
+
+
+# ---- admin / analytics (across all users) ----
+
+
+def count_users():
+    with get_connection() as conn:
+        return conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
+
+
+def count_all_history():
+    with get_connection() as conn:
+        return conn.execute("SELECT COUNT(*) AS n FROM speech_history").fetchone()["n"]
+
+
+def list_users_with_counts():
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT users.id, users.email, users.created_at, "
+            "COUNT(speech_history.id) AS generation_count "
+            "FROM users LEFT JOIN speech_history ON speech_history.user_id = users.id "
+            "GROUP BY users.id ORDER BY users.id"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
+def history_counts_by_day(days=14):
+    since = (datetime.now(timezone.utc) - timedelta(days=days - 1)).date().isoformat()
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT substr(created_at, 1, 10) AS day, COUNT(*) AS n "
+            "FROM speech_history WHERE created_at >= ? GROUP BY day ORDER BY day",
+            (since,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
+def top_languages(limit=5):
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT language, COUNT(*) AS n FROM speech_history "
+            "GROUP BY language ORDER BY n DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
+def top_voices(limit=5):
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT voice, COUNT(*) AS n FROM speech_history "
+            "GROUP BY voice ORDER BY n DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
 
 
 # ---- favorites ----
