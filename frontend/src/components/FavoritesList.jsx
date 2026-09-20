@@ -4,7 +4,7 @@ export default function FavoritesList({ favorites, onSelectVoice, onReplay, onRe
   }
 
   return (
-    <ul className="divide-y divide-gray-200 max-h-56 overflow-y-auto">
+    <ul className="divide-y divide-gray-200 max-h-[70vh] overflow-y-auto">
       {favorites.map((fav) => (
         <li key={fav.id} className="py-2 flex items-center justify-between gap-2">
           <div className="min-w-0">

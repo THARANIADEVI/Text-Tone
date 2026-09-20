@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchAdminUsers, fetchAdminAnalytics } from "../api/adminApi";
 import ErrorMessage from "./ErrorMessage";
-import Logo from "./Logo";
 
 function Stat({ label, value }) {
   return (
@@ -12,7 +11,7 @@ function Stat({ label, value }) {
   );
 }
 
-export default function AdminDashboard({ onClose }) {
+export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [error, setError] = useState("");
@@ -25,19 +24,8 @@ export default function AdminDashboard({ onClose }) {
   const maxDay = Math.max(1, ...(analytics?.generations_by_day.map((d) => d.n) || [1]));
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-start justify-center py-10 px-4">
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-md p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Logo className="h-7 w-7 shrink-0" />
-            <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-          </div>
-          <button className="text-teal-600 hover:underline" onClick={onClose}>
-            Back to app
-          </button>
-        </div>
-
-        <ErrorMessage message={error} />
+    <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+      <ErrorMessage message={error} />
 
         {analytics && (
           <>
@@ -96,7 +84,6 @@ export default function AdminDashboard({ onClose }) {
             </table>
           )}
         </div>
-      </div>
     </div>
   );
 }

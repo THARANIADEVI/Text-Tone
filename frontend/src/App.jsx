@@ -1,20 +1,12 @@
 import { useEffect, useState } from "react";
-import TextInput from "./components/TextInput";
-import LanguageSelector from "./components/LanguageSelector";
-import VoiceSelector from "./components/VoiceSelector";
-import SpeedSelector from "./components/SpeedSelector";
-import FileUpload from "./components/FileUpload";
-import AIEnhance from "./components/AIEnhance";
-import GenerateButton from "./components/GenerateButton";
-import AudioPlayer from "./components/AudioPlayer";
-import DownloadButton from "./components/DownloadButton";
-import ErrorMessage from "./components/ErrorMessage";
-import HistoryList from "./components/HistoryList";
-import FavoritesList from "./components/FavoritesList";
 import AuthForm from "./components/AuthForm";
-import UsageBadge from "./components/UsageBadge";
+import Sidebar from "./components/Sidebar";
+import TopBar from "./components/TopBar";
+import StudioPage from "./components/StudioPage";
+import HistoryPage from "./components/HistoryPage";
+import VoicesPage from "./components/VoicesPage";
+import SettingsPage from "./components/SettingsPage";
 import AdminDashboard from "./components/AdminDashboard";
-import Logo from "./components/Logo";
 import {
   fetchLanguages,
   fetchVoices,
@@ -28,23 +20,42 @@ import {
 } from "./api/ttsApi";
 import { fetchMe, logout as logoutAuth } from "./api/authApi";
 
+const PREFS_KEY = "tts_prefs";
+
+function loadPrefs() {
+  try {
+    return JSON.parse(localStorage.getItem(PREFS_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+const PAGE_TITLES = {
+  studio: { title: "Studio", subtitle: "Turn text into natural-sounding speech." },
+  history: { title: "History", subtitle: "Your past speech generations." },
+  voices: { title: "Voices", subtitle: "Starred voices and clips." },
+  settings: { title: "Settings", subtitle: "Account and default preferences." },
+  admin: { title: "Admin Dashboard", subtitle: "Usage across all users." },
+};
+
 export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState(null);
+  const [view, setView] = useState("studio");
 
+  const prefs = loadPrefs();
   const [languages, setLanguages] = useState([]);
   const [voices, setVoices] = useState([]);
   const [text, setText] = useState("");
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState(prefs.language || "en");
   const [voice, setVoice] = useState("");
-  const [speed, setSpeed] = useState("normal");
+  const [speed, setSpeed] = useState(prefs.speed || "normal");
   const [audioUrl, setAudioUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [history, setHistory] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [usage, setUsage] = useState(null);
-  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
     fetchMe()
@@ -175,6 +186,13 @@ export default function App() {
   function handleSelectFavoriteVoice(favLanguage, favVoiceId) {
     setLanguage(favLanguage);
     setVoice(favVoiceId);
+    setView("studio");
+  }
+
+  function handleSavePreferences(newLanguage, newSpeed) {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ language: newLanguage, speed: newSpeed }));
+    setLanguage(newLanguage);
+    setSpeed(newSpeed);
   }
 
   function handleLogout() {
@@ -183,92 +201,82 @@ export default function App() {
     setHistory([]);
     setFavorites([]);
     setAudioUrl("");
+    setView("studio");
   }
 
   if (!authChecked) return null;
   if (!user) return <AuthForm onAuthenticated={setUser} />;
-  if (showAdmin) return <AdminDashboard onClose={() => setShowAdmin(false)} />;
+
+  const isAdmin = !!user.is_admin;
+  const activeView = view === "admin" && !isAdmin ? "studio" : view;
+  const { title, subtitle } = PAGE_TITLES[activeView];
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-start justify-center py-10 px-4">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-md p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Logo className="h-8 w-8 shrink-0" />
-            <h1 className="text-2xl font-bold text-gray-800">Text-Tone</h1>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span>{user.email}</span>
-            {user.is_admin && (
-              <button className="text-teal-600 hover:underline" onClick={() => setShowAdmin(true)}>
-                Admin
-              </button>
-            )}
-            <button className="text-teal-600 hover:underline" onClick={handleLogout}>
-              Log out
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar view={activeView} onNavigate={setView} isAdmin={isAdmin} />
 
-        <TextInput text={text} setText={setText} />
-        <div className="flex flex-wrap items-center gap-2">
-          <FileUpload setText={setText} setError={setError} />
-          <AIEnhance text={text} setText={setText} setError={setError} />
-        </div>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <TopBar title={title} subtitle={subtitle} email={user.email} onLogout={handleLogout} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <LanguageSelector languages={languages} language={language} setLanguage={setLanguage} />
-          <VoiceSelector
-            voices={voices}
-            voice={voice}
-            setVoice={setVoice}
-            isFavorite={isVoiceFavorite}
-            onToggleFavorite={handleToggleVoiceFavorite}
-          />
-          <SpeedSelector speed={speed} setSpeed={setSpeed} />
-        </div>
+        <main className="flex-1 p-6 overflow-y-auto">
+          {activeView === "studio" && (
+            <StudioPage
+              text={text}
+              setText={setText}
+              setError={setError}
+              languages={languages}
+              language={language}
+              setLanguage={setLanguage}
+              voices={voices}
+              voice={voice}
+              setVoice={setVoice}
+              isVoiceFavorite={isVoiceFavorite}
+              onToggleVoiceFavorite={handleToggleVoiceFavorite}
+              speed={speed}
+              setSpeed={setSpeed}
+              error={error}
+              usage={usage}
+              loading={loading}
+              audioUrl={audioUrl}
+              onGenerate={handleGenerate}
+              onClear={handleClear}
+            />
+          )}
 
-        <ErrorMessage message={error} />
+          {activeView === "history" && (
+            <HistoryPage
+              history={history}
+              onReplay={setAudioUrl}
+              onDelete={handleDeleteHistory}
+              onToggleFavorite={handleToggleHistoryFavorite}
+              favoritedHistoryIds={favoritedHistoryIds}
+            />
+          )}
 
-        <UsageBadge usage={usage} />
+          {activeView === "voices" && (
+            <VoicesPage
+              favorites={favorites}
+              onSelectVoice={handleSelectFavoriteVoice}
+              onReplay={setAudioUrl}
+              onRemove={handleRemoveFavorite}
+            />
+          )}
 
-        <div className="flex gap-3">
-          <GenerateButton
-            onClick={handleGenerate}
-            loading={loading}
-            disabled={!text.trim() || (usage?.limit != null && usage.used >= usage.limit)}
-          />
-          <button
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-            onClick={handleClear}
-          >
-            Clear
-          </button>
-        </div>
+          {activeView === "settings" && (
+            <SettingsPage
+              email={user.email}
+              isAdmin={isAdmin}
+              onOpenAdmin={() => setView("admin")}
+              languages={languages}
+              defaultLanguage={language}
+              defaultSpeed={speed}
+              onSavePreferences={handleSavePreferences}
+              onLogout={handleLogout}
+            />
+          )}
 
-        <AudioPlayer audioUrl={audioUrl} speed={speed} />
-        <DownloadButton audioUrl={audioUrl} />
-
-        <div className="pt-4 border-t border-gray-200">
-          <h2 className="text-sm font-medium text-gray-700 mb-2">Speech History</h2>
-          <HistoryList
-            history={history}
-            onReplay={setAudioUrl}
-            onDelete={handleDeleteHistory}
-            onToggleFavorite={handleToggleHistoryFavorite}
-            favoritedHistoryIds={favoritedHistoryIds}
-          />
-        </div>
-
-        <div className="pt-4 border-t border-gray-200">
-          <h2 className="text-sm font-medium text-gray-700 mb-2">Favorites</h2>
-          <FavoritesList
-            favorites={favorites}
-            onSelectVoice={handleSelectFavoriteVoice}
-            onReplay={setAudioUrl}
-            onRemove={handleRemoveFavorite}
-          />
-        </div>
+          {activeView === "admin" && <AdminDashboard />}
+        </main>
       </div>
     </div>
   );
