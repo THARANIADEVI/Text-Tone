@@ -9,4 +9,4 @@ services:
       - key: MAX_TEXT_LENGTH
         value: 500
       - key: CORS_ORIGIN
-        value: http://localhost:5173
+        value: https://text-to-speech-frontend-tharania.vercel.app
